@@ -1,18 +1,21 @@
 # Import the dependencies.
 import numpy as np
+import pandas as pd
+import datetime as dt
+import re
 
+# Python SQL toolkit and Object Relational Mapper
 import sqlalchemy
 from sqlalchemy.ext.automap import automap_base
+from sqlalchemy.inspection import inspect
 from sqlalchemy.orm import Session
 from sqlalchemy import create_engine, func
-
 from flask import Flask, jsonify
-
 
 #################################################
 # Database Setup
 #################################################
-engine = create_engine("sqlite:///C:\Users\laris\Documents\sqlalchemy-challenge\sqlalchemy-challenge\SurfsUp\Resources\hawaii.sqlite")
+engine = create_engine(r"sqlite:///C:\Users\laris\Documents\sqlalchemy-challenge\sqlalchemy-challenge\SurfsUp\Resources\hawaii.sqlite")
 
 # reflect an existing database into a new model
 Base = automap_base()
@@ -21,12 +24,11 @@ Base = automap_base()
 Base.prepare(autoload_with=engine)
 
 # Save references to each table
-Passenger = Base.classes.passenger
+Station = Base.classes.station
+Measurement = Base.classes.measurement
 
 # Create our session (link) from Python to the DB
-station = Base.classes.station
-
-measurement = Base.classes.measurement
+session = Session(engine)
 
 #################################################
 # Flask Setup
@@ -34,20 +36,24 @@ measurement = Base.classes.measurement
 app = Flask(__name__)
 
 
-
 #################################################
 # Flask Routes
 #################################################
+
+#1. '/'
+# - Start at the homepage.
+# - List all the available routes.
+
 @app.route("/")
 def welcome():
-    """List all available api routes."""
     return (
+        f"Welcome to the Climate Analysis of Hawaii!<br/>"
         f"Available Routes:<br/>"
         f"/api/v1.0/precipitation<br/>"
         f"/api/v1.0/stations<br/>"
         f"/api/v1.0/tobs<br/>"
-        f"/api/v1.0/<start (enter as YYYY-MM-DD)<br/>>"
-        f"/api/v1.0/<start>/<end (enter as YYYY-MM-DD)<br/>>"
+        f"/api/v1.0/<start><br/>"
+        f"/api/v1.0/<start>/<end><br/>"
     )
 
 #2. /api/v1.0/precipitation
@@ -133,7 +139,6 @@ def tobs():
 
 
 @app.route("/api/v1.0/<start>")
-
 def get_temps_start(start):
     session = Session(engine)
     results = session.query(func.min(Measurement.tobs), func.avg(Measurement.tobs), func.max(Measurement.tobs)).\
